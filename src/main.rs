@@ -1,8 +1,6 @@
 use reqwest::blocking::Client;
-use reqwest::cookie::{CookieStore, Jar};
 use reqwest::Url;
 use scraper::{Html, Selector};
-use std::sync::Arc;
 
 fn extract_view_state(html: &str) -> Option<String> {
     let document = Html::parse_document(html);
@@ -36,11 +34,8 @@ fn main() {
         .expect("Failed to read password from stdin");
     password = password.trim().to_string();
 
-    let cookie_store = Arc::new(Jar::default());
-
     let client = Client::builder()
-        .cookie_provider(cookie_store.clone())
-        .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
+        .cookie_store(true)
         .build()
         .expect("Failed to build client");
 
@@ -69,17 +64,7 @@ fn main() {
         .send()
         .expect("Sending login POST request failed");
 
-    println!("Login response Status: {}", login.status());
-    println!("Login response Cookies:");
-    login.cookies().for_each(|cookie| println!("{:?}", cookie));
-    if let Some(cookies) = cookie_store.cookies(&login_url) {
-        println!("Stored cookies: {:?}", cookies);
-    }
-
     let login_response_body = login.text().expect("Failed to parse login response text");
-
-    println!("\nLogin response body:");
-    println!("{}", login_response_body);
 
     if login_response_body.contains("Nesprávne používateľské meno alebo heslo") {
         panic!("Login Failed");
@@ -90,14 +75,8 @@ fn main() {
         .send()
         .expect("Failed to send request");
 
-    println!("Response Status: {}", response.status());
-    println!("Response Cookies:");
-    response
-        .cookies()
-        .for_each(|cookie| println!("{:?}", cookie));
+    let response_body = response.text().expect("Failed to parse response text");
 
-    let _response_body = response.text().expect("Failed to parse response text");
-
-    // println!("\nResponse body:");
-    // println!("{}", response_body);
+    println!("\nResponse body:");
+    println!("{}", response_body);
 }
