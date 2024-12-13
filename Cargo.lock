@@ -1484,6 +1484,7 @@ dependencies = [
  "anyhow",
  "reqwest",
  "scraper",
+ "serde",
 ]
 
 [[package]]
