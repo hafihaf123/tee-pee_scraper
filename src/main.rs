@@ -1,20 +1,13 @@
-use anyhow::{anyhow, Context, Result};
+use crate::teepee::{Credentials, TeePee};
+use anyhow::{Context, Result};
 use reqwest::blocking::Client;
 use reqwest::Url;
-use scraper::{Html, Selector};
+use std::io::Write;
 
-fn extract_view_state(html: &str) -> Option<String> {
-    let document = Html::parse_document(html);
-    let selector = Selector::parse("input[name=\"javax.faces.ViewState\"]").unwrap();
-    document
-        .select(&selector)
-        .next()
-        .and_then(|input| input.value().attr("value"))
-        .map(|v| v.to_string())
-}
+mod teepee;
 
 fn main() -> Result<()> {
-    let request_url = read_from_stdin("Url:")?;
+    let request_url = read_from_stdin("Url:")?.parse::<Url>()?;
     let username = read_from_stdin("Username:")?;
     let password = read_from_stdin("Password:")?;
 
@@ -23,68 +16,24 @@ fn main() -> Result<()> {
         .build()
         .with_context(|| "Failed to build client")?;
 
-    login_with_creds(&username, &password, &client)?;
+    let credentials = Credentials::new(username, password);
 
-    let response_body = client
-        .get(request_url)
-        .send()
-        .with_context(|| "Failed to send request")?
-        .text()
-        .with_context(|| "Failed to parse response text")?;
+    let tee_pee = TeePee::new(client);
 
-    println!("\nResponse body:");
-    println!("{}", response_body);
+    tee_pee.login_with_creds(&credentials)?;
 
-    Ok(())
-}
-
-fn login_with_creds(username: &String, password: &String, client: &Client) -> Result<()> {
-    let login_url = Url::parse("https://skauting.tee-pee.com/login")
-        .with_context(|| "Failed to parse login url")?;
-
-    let view_state = get_login_viewstate(client, &login_url)?;
-
-    let login_form_data = [
-        ("loginForm", "loginForm"),
-        ("usernameId", &username),
-        ("passwordId", &password),
-        ("loginBtnId", ""),
-        ("javax.faces.ViewState", &view_state),
-    ];
-
-    let login = client
-        .post(login_url.clone())
-        .form(&login_form_data)
-        .send()
-        .with_context(|| "Sending login POST request failed")?;
-
-    let login_response_body = login
-        .text()
-        .with_context(|| "Failed to parse login response text")?;
-
-    if login_response_body.contains("Nesprávne používateľské meno alebo heslo") {
-        return Err(anyhow!("Login Failed"));
-    }
+    println!(
+        "\nResponse body:{}",
+        tee_pee.get_response_body(request_url)?
+    );
 
     Ok(())
-}
-
-fn get_login_viewstate(client: &Client, login_url: &Url) -> Result<String> {
-    let login_page = client
-        .get(login_url.clone())
-        .send()
-        .with_context(|| "Failed to fetch login page")?;
-    let login_page_text = login_page
-        .text()
-        .with_context(|| "Failed to read login page text")?;
-    let view_state = extract_view_state(&login_page_text)
-        .with_context(|| "Failed to extract javax.faces.ViewState")?;
-
-    Ok(view_state)
 }
 
 fn read_from_stdin(message: &str) -> Result<String> {
     println!("{}", message);
+    print!("> ");
+    std::io::stdout().flush()?;
     let mut read_string = String::new();
     std::io::stdin()
         .read_line(&mut read_string)
