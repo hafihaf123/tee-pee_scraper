@@ -1,3 +1,4 @@
+use anyhow::{anyhow, Context, Result};
 use reqwest::blocking::Client;
 use reqwest::Url;
 use scraper::{Html, Selector};
@@ -12,43 +13,46 @@ fn extract_view_state(html: &str) -> Option<String> {
         .map(|v| v.to_string())
 }
 
-fn main() {
-    println!("URL:");
-    let mut request_url = String::new();
-    std::io::stdin()
-        .read_line(&mut request_url)
-        .expect("Failed to read request url from stdin");
-    request_url = request_url.trim().to_string();
-
-    println!("username:");
-    let mut username = String::new();
-    std::io::stdin()
-        .read_line(&mut username)
-        .expect("Failed to read username from stdin");
-    username = username.trim().to_string();
-
-    println!("password:");
-    let mut password = String::new();
-    std::io::stdin()
-        .read_line(&mut password)
-        .expect("Failed to read password from stdin");
-    password = password.trim().to_string();
+fn main() -> Result<()> {
+    let request_url = read_from_stdin("Url:")?;
+    let username = read_from_stdin("Username:")?;
+    let password = read_from_stdin("Password:")?;
 
     let client = Client::builder()
         .cookie_store(true)
         .build()
-        .expect("Failed to build client");
+        .with_context(|| "Failed to build client")?;
 
-    let login_url =
-        Url::parse("https://skauting.tee-pee.com/login").expect("Failed to parse login url");
+    login_with_creds(&username, &password, &client)?;
+
+    let response = client
+        .get(request_url)
+        .send()
+        .with_context(|| "Failed to send request")?;
+
+    let response_body = response
+        .text()
+        .with_context(|| "Failed to parse response text")?;
+
+    println!("\nResponse body:");
+    println!("{}", response_body);
+
+    Ok(())
+}
+
+fn login_with_creds(username: &String, password: &String, client: &Client) -> Result<()> {
+    let login_url = Url::parse("https://skauting.tee-pee.com/login")
+        .with_context(|| "Failed to parse login url")?;
 
     let login_page = client
         .get(login_url.clone())
         .send()
-        .expect("Failed to fetch login page");
-    let login_page_text = login_page.text().expect("Failed to read login page text");
-    let view_state =
-        extract_view_state(&login_page_text).expect("Failed to extract javax.faces.ViewState");
+        .with_context(|| "Failed to fetch login page")?;
+    let login_page_text = login_page
+        .text()
+        .with_context(|| "Failed to read login page text")?;
+    let view_state = extract_view_state(&login_page_text)
+        .with_context(|| "Failed to extract javax.faces.ViewState")?;
 
     let login_form_data = [
         ("loginForm", "loginForm"),
@@ -62,21 +66,24 @@ fn main() {
         .post(login_url.clone())
         .form(&login_form_data)
         .send()
-        .expect("Sending login POST request failed");
+        .with_context(|| "Sending login POST request failed")?;
 
-    let login_response_body = login.text().expect("Failed to parse login response text");
+    let login_response_body = login
+        .text()
+        .with_context(|| "Failed to parse login response text")?;
 
     if login_response_body.contains("Nesprávne používateľské meno alebo heslo") {
-        panic!("Login Failed");
+        return Err(anyhow!("Login Failed"));
     }
 
-    let response = client
-        .get(request_url)
-        .send()
-        .expect("Failed to send request");
+    Ok(())
+}
 
-    let response_body = response.text().expect("Failed to parse response text");
-
-    println!("\nResponse body:");
-    println!("{}", response_body);
+fn read_from_stdin(message: &str) -> Result<String> {
+    println!("{}", message);
+    let mut read_string = String::new();
+    std::io::stdin()
+        .read_line(&mut read_string)
+        .with_context(|| "Failed to read request url from stdin")?;
+    Ok(read_string.trim().to_string())
 }
