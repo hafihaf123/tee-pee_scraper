@@ -25,12 +25,10 @@ fn main() -> Result<()> {
 
     login_with_creds(&username, &password, &client)?;
 
-    let response = client
+    let response_body = client
         .get(request_url)
         .send()
-        .with_context(|| "Failed to send request")?;
-
-    let response_body = response
+        .with_context(|| "Failed to send request")?
         .text()
         .with_context(|| "Failed to parse response text")?;
 
@@ -44,15 +42,7 @@ fn login_with_creds(username: &String, password: &String, client: &Client) -> Re
     let login_url = Url::parse("https://skauting.tee-pee.com/login")
         .with_context(|| "Failed to parse login url")?;
 
-    let login_page = client
-        .get(login_url.clone())
-        .send()
-        .with_context(|| "Failed to fetch login page")?;
-    let login_page_text = login_page
-        .text()
-        .with_context(|| "Failed to read login page text")?;
-    let view_state = extract_view_state(&login_page_text)
-        .with_context(|| "Failed to extract javax.faces.ViewState")?;
+    let view_state = get_login_viewstate(client, &login_url)?;
 
     let login_form_data = [
         ("loginForm", "loginForm"),
@@ -77,6 +67,20 @@ fn login_with_creds(username: &String, password: &String, client: &Client) -> Re
     }
 
     Ok(())
+}
+
+fn get_login_viewstate(client: &Client, login_url: &Url) -> Result<String> {
+    let login_page = client
+        .get(login_url.clone())
+        .send()
+        .with_context(|| "Failed to fetch login page")?;
+    let login_page_text = login_page
+        .text()
+        .with_context(|| "Failed to read login page text")?;
+    let view_state = extract_view_state(&login_page_text)
+        .with_context(|| "Failed to extract javax.faces.ViewState")?;
+
+    Ok(view_state)
 }
 
 fn read_from_stdin(message: &str) -> Result<String> {
