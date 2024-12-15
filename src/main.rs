@@ -14,10 +14,7 @@ fn main() -> Result<()> {
 
     tee_pee.login(&credentials)?;
 
-    println!(
-        "\nResponse body:{}",
-        tee_pee.get(&request_url)?
-    );
+    println!("\nResponse body:{}", tee_pee.get(&request_url)?);
 
     Ok(())
 }

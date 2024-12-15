@@ -3,8 +3,8 @@ use anyhow::{anyhow, Context, Result};
 use reqwest::blocking::Client;
 use reqwest::{IntoUrl, Url};
 use scraper::{Html, Selector};
-use std::fmt::Debug;
 use serde::Serialize;
+use std::fmt::Debug;
 
 pub struct TeePeeClient {
     client: Client,
@@ -32,10 +32,10 @@ impl TeePeeClient {
             .with_context(|| "Failed to parse login url")?;
 
         let view_state = self.get_view_state(&login_url)?;
-
         let login_form = LoginForm::from_credentials(credentials, &view_state);
 
-        let login_response_body = self.post_form(&login_url, &login_form)
+        let login_response_body = self
+            .post_form(&login_url, &login_form)
             .with_context(|| "Sending login POST request failed")?;
 
         if login_response_body.contains("Nesprávne používateľské meno alebo heslo") {
@@ -53,7 +53,11 @@ impl TeePeeClient {
             .text()
             .with_context(|| format!("Failed to parse response text from '{:?}'", url))?)
     }
-    pub fn post_form<U: IntoUrl + Clone + Debug, T: Serialize + ?Sized>(&self, url: &U, form: &T) -> Result<String> {
+    pub fn post_form<U: IntoUrl + Clone + Debug, T: Serialize + ?Sized>(
+        &self,
+        url: &U,
+        form: &T,
+    ) -> Result<String> {
         Ok(self
             .client
             .post(url.clone())
