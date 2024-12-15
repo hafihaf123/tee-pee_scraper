@@ -1,39 +1,29 @@
-use crate::teepee::{Credentials, TeePee};
 use anyhow::{Context, Result};
-use reqwest::blocking::Client;
-use reqwest::Url;
-use std::io::Write;
-
-mod teepee;
+use rpassword::prompt_password;
+use tee_pee_scraper::authentication::Credentials;
+use tee_pee_scraper::TeePeeClient;
 
 fn main() -> Result<()> {
-    let request_url = read_from_stdin("Url:")?.parse::<Url>()?;
-    let username = read_from_stdin("Username:")?;
-    let password = read_from_stdin("Password:")?;
-
-    let client = Client::builder()
-        .cookie_store(true)
-        .build()
-        .with_context(|| "Failed to build client")?;
+    let request_url = read_from_stdin("Url: ")?;
+    let username = read_from_stdin("Username: ")?;
+    let password = prompt_password("Password: ")?;
 
     let credentials = Credentials::new(username, password);
 
-    let tee_pee = TeePee::new(client);
+    let tee_pee = TeePeeClient::default();
 
-    tee_pee.login_with_creds(&credentials)?;
+    tee_pee.login(&credentials)?;
 
     println!(
         "\nResponse body:{}",
-        tee_pee.get_response_body(request_url)?
+        tee_pee.get(&request_url)?
     );
 
     Ok(())
 }
 
-fn read_from_stdin(message: &str) -> Result<String> {
+pub fn read_from_stdin(message: &str) -> Result<String> {
     println!("{}", message);
-    print!("> ");
-    std::io::stdout().flush()?;
     let mut read_string = String::new();
     std::io::stdin()
         .read_line(&mut read_string)
