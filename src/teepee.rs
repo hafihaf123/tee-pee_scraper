@@ -33,7 +33,7 @@ impl TeePeeClient {
         let login_url = "https://skauting.tee-pee.com/login";
 
         let view_state = self.get_view_state(login_url)?;
-        let login_form = LoginForm::from_credentials(credentials, &view_state);
+        let login_form = LoginForm::from_credentials(credentials, &view_state)?;
 
         let login_response_body = self
             .post_form(login_url, &login_form)

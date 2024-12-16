@@ -7,9 +7,12 @@ use tee_pee_scraper::TeePeeClient;
 
 fn main() -> Result<()> {
     let username = read_from_stdin("Username: ")?;
-    let password = prompt_password("Password: ")?;
 
-    let credentials = Credentials::new(username, password)?;
+    let credentials = Credentials::new(&username)?;
+    if !credentials.has_password() {
+        let password = prompt_password("Password: ")?;
+        credentials.set_password(&password)?;
+    }
 
     let tee_pee_client = TeePeeClient::default();
 

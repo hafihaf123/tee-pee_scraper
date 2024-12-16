@@ -1,4 +1,5 @@
 use super::Credentials;
+use anyhow::Result;
 use serde::Serialize;
 
 #[derive(Serialize)]
@@ -25,13 +26,17 @@ impl LoginForm {
             javax_faces_view_state: javax_faces_view_state.to_string(),
         }
     }
-    pub fn from_credentials(credentials: &Credentials, javax_faces_view_state: &str) -> Self {
-        Self {
+    pub fn from_credentials(
+        credentials: &Credentials,
+        javax_faces_view_state: &str,
+    ) -> Result<Self> {
+        let password = credentials.password()?;
+        Ok(Self {
             login_form: "loginForm".to_string(),
             username_id: credentials.username().to_string(),
-            password_id: credentials.password().to_string(),
+            password_id: password,
             login_btn_id: String::default(),
             javax_faces_view_state: javax_faces_view_state.to_string(),
-        }
+        })
     }
 }
