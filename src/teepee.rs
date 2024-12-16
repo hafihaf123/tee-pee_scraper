@@ -1,11 +1,12 @@
 use crate::authentication::{Credentials, LoginForm};
 use anyhow::{anyhow, Context, Result};
 use reqwest::blocking::Client;
-use reqwest::{IntoUrl, Url};
+use reqwest::IntoUrl;
 use scraper::{Html, Selector};
 use serde::Serialize;
 use std::fmt::Debug;
 
+#[derive(Clone)]
 pub struct TeePeeClient {
     client: Client,
 }
@@ -27,15 +28,15 @@ impl TeePeeClient {
     pub fn new(client: Client) -> Self {
         Self { client }
     }
-    pub fn login(&self, credentials: &Credentials) -> Result<()> {
-        let login_url = Url::parse("https://skauting.tee-pee.com/login")
-            .with_context(|| "Failed to parse login url")?;
 
-        let view_state = self.get_view_state(&login_url)?;
+    pub fn login(&self, credentials: &Credentials) -> Result<()> {
+        let login_url = "https://skauting.tee-pee.com/login";
+
+        let view_state = self.get_view_state(login_url)?;
         let login_form = LoginForm::from_credentials(credentials, &view_state);
 
         let login_response_body = self
-            .post_form(&login_url, &login_form)
+            .post_form(login_url, &login_form)
             .with_context(|| "Sending login POST request failed")?;
 
         if login_response_body.contains("Nesprávne používateľské meno alebo heslo") {
@@ -44,30 +45,33 @@ impl TeePeeClient {
 
         Ok(())
     }
-    pub fn get<U: IntoUrl + Clone + Debug>(&self, url: &U) -> Result<String> {
+
+    pub fn get<U: IntoUrl + Copy + Debug>(&self, url: U) -> Result<String> {
         Ok(self
             .client
-            .get(url.clone())
+            .get(url)
             .send()
             .with_context(|| format!("Failed to send request to '{:?}'", url))?
             .text()
             .with_context(|| format!("Failed to parse response text from '{:?}'", url))?)
     }
-    pub fn post_form<U: IntoUrl + Clone + Debug, T: Serialize + ?Sized>(
+
+    pub fn post_form<U: IntoUrl + Copy + Debug, T: Serialize + ?Sized>(
         &self,
-        url: &U,
+        url: U,
         form: &T,
     ) -> Result<String> {
         Ok(self
             .client
-            .post(url.clone())
+            .post(url)
             .form(form)
             .send()
             .with_context(|| format!("Failed to send request to '{:?}'", url))?
             .text()
             .with_context(|| format!("Failed to parse response text from '{:?}'", url))?)
     }
-    fn get_view_state<U: IntoUrl + Clone + Debug>(&self, url: &U) -> Result<String> {
+
+    fn get_view_state<U: IntoUrl + Copy + Debug>(&self, url: U) -> Result<String> {
         let page_text = self.get(url)?;
 
         Ok(extract_view_state(&page_text)

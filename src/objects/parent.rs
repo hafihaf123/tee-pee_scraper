@@ -1,3 +1,5 @@
+use crate::objects::teepee_object::TeePeeObject;
+
 #[derive(Default)]
 pub struct Parent {
     name: String,
@@ -7,20 +9,16 @@ pub struct Parent {
 }
 
 impl Parent {
-    pub fn new(name: String, surname: String) -> Self {
+    pub fn new(name: &str, surname: &str) -> Self {
         Self {
-            name,
-            surname,
+            name: name.into(),
+            surname: surname.into(),
             ..Default::default()
         }
     }
 
-    pub fn builder(name: String, surname: String) -> ParentBuilder {
-        ParentBuilder {
-            name,
-            surname,
-            ..Default::default()
-        }
+    pub fn builder() -> ParentBuilder {
+        ParentBuilder::new()
     }
 
     pub fn name(&self) -> &str {
@@ -40,6 +38,8 @@ impl Parent {
     }
 }
 
+impl TeePeeObject for Parent {}
+
 #[derive(Default)]
 pub struct ParentBuilder {
     name: String,
@@ -49,12 +49,8 @@ pub struct ParentBuilder {
 }
 
 impl ParentBuilder {
-    pub fn new(surname: String, name: String) -> Self {
-        Self {
-            name,
-            surname,
-            ..Default::default()
-        }
+    pub fn new() -> Self {
+        Self::default()
     }
 
     pub fn build(self) -> Parent {
@@ -66,22 +62,22 @@ impl ParentBuilder {
         }
     }
 
-    pub fn name(mut self, name: &str) -> Self {
+    pub fn name(&mut self, name: &str) -> &mut Self {
         self.name = name.into();
         self
     }
 
-    pub fn surname(mut self, surname: &str) -> Self {
+    pub fn surname(&mut self, surname: &str) -> &mut Self {
         self.surname = surname.into();
         self
     }
 
-    pub fn phone(mut self, phone: &str) -> Self {
+    pub fn phone(&mut self, phone: &str) -> &mut Self {
         self.phone = Some(phone.into());
         self
     }
 
-    pub fn email(mut self, email: &str) -> Self {
+    pub fn email(&mut self, email: &str) -> &mut Self {
         self.email = Some(email.into());
         self
     }
