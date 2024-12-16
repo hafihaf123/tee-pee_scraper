@@ -3,8 +3,9 @@ use crate::scraping::teepee_scraper::TeePeeScraper;
 use crate::scraping::utils::{create_selector, fetch_html};
 use crate::scraping::ScraperMode;
 use crate::TeePeeClient;
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use regex::Regex;
+use scraper::{ElementRef, Selector};
 
 pub enum UnitScraperMode {
     MyUnits,
@@ -42,7 +43,10 @@ impl UnitScraper {
             return Ok(self.my_units.clone());
         }
 
-        let html = fetch_html(&self.client, "https://skauting.tee-pee.com/user/profile#data")?;
+        let html = fetch_html(
+            &self.client,
+            "https://skauting.tee-pee.com/user/profile#data",
+        )?;
 
         let selector = create_selector("li#j_idt51\\:layoutMenu_5 ul li a")?;
 
@@ -74,11 +78,10 @@ impl UnitScraper {
 
         let html = fetch_html(&self.client, &parent_unit_url)?;
 
-        let outer_selector = create_selector("div#orgUnitDetailsTabViewId\\:j_idt103_content div.ui-g")?;
+        let outer_selector =
+            create_selector("div#orgUnitDetailsTabViewId\\:j_idt103_content div.ui-g")?;
         let name_selector = create_selector("span.ListItemName")?;
-        let id_selector = create_selector(r#"a[class="ui-link ui-widget"]"#)?;
-
-        let re = Regex::new(r"/units/(\d+)/detail")?;
+        let id_selector = create_selector("a.ui-link.ui-widget")?;
 
         for menu_element in html.select(&outer_selector) {
             let mut unit_builder = Unit::builder();
@@ -89,15 +92,9 @@ impl UnitScraper {
                 }
             }
 
-            if let Some(id_element) = menu_element.select(&id_selector).next() {
-                if let Some(unit_link) = id_element.value().attr("href") {
-                    if let Some(unit_id_capture) = re.captures(unit_link) {
-                        if let Some(unit_id) = unit_id_capture.get(1) {
-                            unit_builder.id(unit_id.as_str().parse()?);
-                        }
-                    }
-                }
-            }
+            let unit_id = extract_unit_id(menu_element, &id_selector)?;
+            unit_builder.id(unit_id);
+
             parent_unit.add_child_unit(unit_builder.build()?);
         }
 
@@ -105,3 +102,17 @@ impl UnitScraper {
     }
 }
 
+fn extract_unit_id(menu_element: ElementRef, id_selector: &Selector) -> Result<u32> {
+    let re = Regex::new(r"/units/(\d+)/detail")?;
+
+    menu_element
+        .select(id_selector)
+        .next()
+        .and_then(|id_element| id_element.value().attr("href"))
+        .and_then(|unit_link| re.captures(unit_link))
+        .and_then(|unit_id_capture| unit_id_capture.get(1))
+        .map_or_else(
+            || Err(anyhow!("Could not find id")),
+            |unit_id| unit_id.as_str().parse::<u32>().map_err(|e| anyhow!(e)),
+        )
+}

@@ -1,10 +1,13 @@
-use reqwest::IntoUrl;
-use std::fmt::Debug;
-use scraper::{Html, Selector};
-use anyhow::anyhow;
 use crate::TeePeeClient;
+use anyhow::anyhow;
+use reqwest::IntoUrl;
+use scraper::{Html, Selector};
+use std::fmt::Debug;
 
-pub(super) fn fetch_html<U: IntoUrl + Copy + Debug>(client: &TeePeeClient, parent_unit_url: U) -> anyhow::Result<Html> {
+pub(super) fn fetch_html<U: IntoUrl + Copy + Debug>(
+    client: &TeePeeClient,
+    parent_unit_url: U,
+) -> anyhow::Result<Html> {
     Ok(Html::parse_document(&client.get(parent_unit_url)?))
 }
 

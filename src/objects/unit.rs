@@ -1,9 +1,8 @@
-use std::fmt::{Display, Formatter};
 use crate::objects::teepee_object::TeePeeObject;
 use anyhow::{anyhow, Result};
+use std::fmt::{Display, Formatter};
 
-#[derive(Clone)]
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum UnitType {
     Druzina,
     Oddiel,
@@ -12,8 +11,7 @@ pub enum UnitType {
     Rada,
 }
 
-#[derive(Clone, Debug)]
-#[derive(Default)]
+#[derive(Clone, Debug, Default)]
 pub struct Unit {
     name: String,
     id: u32,

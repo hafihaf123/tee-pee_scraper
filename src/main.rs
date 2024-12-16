@@ -1,6 +1,6 @@
-use std::io::Write;
 use anyhow::{Context, Result};
 use rpassword::prompt_password;
+use std::io::Write;
 use tee_pee_scraper::authentication::Credentials;
 use tee_pee_scraper::scraping::{ChildUnits, MyUnits, TeePeeScraper, UnitScraper};
 use tee_pee_scraper::TeePeeClient;
@@ -20,12 +20,19 @@ fn main() -> Result<()> {
     println!("Your Units:");
     for unit in unit_scraper.scrape(MyUnits)? {
         println!("{}", unit);
-        
+
         unit_scraper
             .scrape(ChildUnits(unit))?
             .iter()
             .for_each(|unit| {
                 println!("   {}", unit);
+                unit_scraper
+                    .scrape(ChildUnits(unit.clone()))
+                    .unwrap()
+                    .iter()
+                    .for_each(|unit| {
+                        println!("      {}", unit);
+                    })
             });
     }
 
