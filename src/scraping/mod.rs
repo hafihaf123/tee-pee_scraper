@@ -1,12 +1,13 @@
-mod teepee_scraper;
-pub use teepee_scraper::TeePeeScraper;
+mod scraper;
+mod scraper_mode;
+pub use scraper::Scraper;
 
 mod unit_scraper;
 pub use unit_scraper::UnitScraper;
 pub use unit_scraper::UnitScraperMode::*;
 
-mod scraper_mode;
-
 mod utils;
 
-pub use scraper_mode::ScraperMode;
+pub mod person_scraper;
+pub use person_scraper::PersonScraper;
+pub use person_scraper::PersonScraperMode::*;

@@ -2,12 +2,11 @@ use anyhow::{Context, Result};
 use rpassword::prompt_password;
 use std::io::Write;
 use tee_pee_scraper::authentication::Credentials;
-use tee_pee_scraper::scraping::{MyUnits, TeePeeScraper, UnitScraper};
+use tee_pee_scraper::scraping::{FromUnit, MyUnits, PersonScraper, Scraper, UnitScraper};
 use tee_pee_scraper::TeePeeClient;
 
 fn main() -> Result<()> {
     let username = read_from_stdin("Username: ")?;
-
     let credentials = Credentials::new(&username)?;
 
     let tee_pee_client = TeePeeClient::default();
@@ -37,27 +36,16 @@ fn main() -> Result<()> {
 
         unit.scrape_child_units(&mut unit_scraper)?;
         unit.into_child_units().iter_mut().for_each(|child| {
-            println!("   {}", child);
-            child.scrape_child_units(&mut unit_scraper).unwrap();
-            child
-                .child_units()
-                .iter()
-                .for_each(|child| println!("      {}", child));
+            if child.name().eq("Húsenice") {
+                println!("\n{} unit persons:\n", child.name());
+                let mut person_scraper = PersonScraper::new(&tee_pee_client);
+                let persons = person_scraper.scrape(FromUnit(child.clone())).expect("Failed to scrape persons");
+                for person in persons {
+                    println!("{}", person.name());
+                }
+                println!();
+            }
         });
-
-        /*unit_scraper
-        .scrape(ChildUnits(unit))?
-        .iter()
-        .for_each(|unit| {
-            println!("   {}", unit);
-            unit_scraper
-                .scrape(ChildUnits(unit.clone()))
-                .unwrap()
-                .iter()
-                .for_each(|unit| {
-                    println!("      {}", unit);
-                })
-        });*/
     }
 
     Ok(())

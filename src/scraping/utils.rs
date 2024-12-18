@@ -1,21 +1,48 @@
 use crate::TeePeeClient;
-use anyhow::anyhow;
+use anyhow::{anyhow, Result};
+use regex::Regex;
 use reqwest::IntoUrl;
-use scraper::{Html, Selector};
+use scraper::{ElementRef, Html, Selector};
 use std::fmt::Debug;
 
 pub(super) fn fetch_html<U: IntoUrl + Copy + Debug>(
     client: &TeePeeClient,
     parent_unit_url: U,
-) -> anyhow::Result<Html> {
+) -> Result<Html> {
     Ok(Html::parse_document(&client.get(parent_unit_url)?))
 }
 
-pub(super) fn create_selector(selectors: &str) -> anyhow::Result<Selector> {
+pub(super) fn create_selector(selectors: &str) -> Result<Selector> {
     Ok(match Selector::parse(selectors) {
         Ok(selector) => selector,
         Err(e) => {
             return Err(anyhow!("Parsing a selector failed: {}", e));
         }
     })
+}
+
+pub(super) fn extract_id(menu_element: ElementRef, id_selector: &Selector) -> Result<u32> {
+    let re = Regex::new(r"/\w+/(\d+)/detail")?;
+
+    menu_element
+        .select(id_selector)
+        .next()
+        .and_then(|id_element| id_element.value().attr("href"))
+        .and_then(|unit_link| re.captures(unit_link))
+        .and_then(|unit_id_capture| unit_id_capture.get(1))
+        .map_or_else(
+            || Err(anyhow!("Could not find id")),
+            |unit_id| unit_id.as_str().parse::<u32>().map_err(|e| anyhow!(e)),
+        )
+}
+
+pub(super) fn extract_name(menu_element: ElementRef, name_selector: &Selector) -> Result<String> {
+    menu_element
+        .select(name_selector)
+        .next()
+        .and_then(|name_element| name_element.text().next())
+        .map_or_else(
+            || Err(anyhow!("Could not find name")),
+            |name| Ok(name.into()),
+        )
 }

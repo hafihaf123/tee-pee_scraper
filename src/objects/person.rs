@@ -1,5 +1,6 @@
 use super::Parent;
 use crate::objects::teepee_object::TeePeeObject;
+use anyhow::{anyhow, Result};
 
 pub enum Gender {
     Male,
@@ -9,21 +10,20 @@ pub enum Gender {
 #[derive(Default)]
 pub struct Person {
     name: String,
-    surname: String,
+    id: u32,
     gender: Option<Gender>,
     birth_date: Option<String>,
     nickname: Option<String>,
-    id: Option<u32>,
     volunteer: Option<bool>,
     ztp: Option<bool>,
     parents: Vec<Parent>,
 }
 
 impl Person {
-    pub fn new(name: &str, surname: &str) -> Self {
+    pub fn new(name: &str, id: u32) -> Self {
         Self {
             name: name.into(),
-            surname: surname.into(),
+            id,
             ..Default::default()
         }
     }
@@ -34,10 +34,6 @@ impl Person {
 
     pub fn name(&self) -> &str {
         &self.name
-    }
-
-    pub fn surname(&self) -> &str {
-        &self.surname
     }
 
     pub fn gender(&self) -> &Option<Gender> {
@@ -52,7 +48,7 @@ impl Person {
         &self.nickname
     }
 
-    pub fn id(&self) -> Option<u32> {
+    pub fn id(&self) -> u32 {
         self.id
     }
 
@@ -77,12 +73,11 @@ impl TeePeeObject for Person {}
 
 #[derive(Default)]
 pub struct PersonBuilder {
-    name: String,
-    surname: String,
+    name: Option<String>,
+    id: Option<u32>,
     gender: Option<Gender>,
     birth_date: Option<String>,
     nickname: Option<String>,
-    id: Option<u32>,
     volunteer: Option<bool>,
     ztp: Option<bool>,
 }
@@ -92,27 +87,24 @@ impl PersonBuilder {
         Self::default()
     }
 
-    pub fn build(self) -> Person {
-        Person {
-            name: self.name,
-            surname: self.surname,
+    pub fn build(self) -> Result<Person> {
+        let name = self.name.ok_or_else(|| anyhow!("name is required"))?;
+        let id = self.id.ok_or_else(|| anyhow!("id is required"))?;
+
+        Ok(Person {
+            name,
+            id,
             gender: self.gender,
             birth_date: self.birth_date,
             nickname: self.nickname,
-            id: self.id,
             volunteer: self.volunteer,
             ztp: self.ztp,
             ..Default::default()
-        }
+        })
     }
 
     pub fn name(&mut self, name: &str) -> &mut Self {
-        self.name = name.into();
-        self
-    }
-
-    pub fn surname(&mut self, surname: &str) -> &mut Self {
-        self.surname = surname.into();
+        self.name = Some(name.into());
         self
     }
 

@@ -1,11 +1,11 @@
 use crate::objects::Unit;
-use crate::scraping::teepee_scraper::TeePeeScraper;
+use crate::scraping::scraper::Scraper;
+use crate::scraping::scraper_mode::ScraperMode;
 use crate::scraping::utils::{create_selector, fetch_html};
-use crate::scraping::{ChildUnits, MyUnits, ScraperMode};
+use crate::scraping::{utils, ChildUnits, MyUnits};
 use crate::TeePeeClient;
-use anyhow::{anyhow, Result};
-use regex::Regex;
-use scraper::{ElementRef, Selector};
+use anyhow::Result;
+use utils::{extract_id, extract_name};
 
 pub enum UnitScraperMode {
     MyUnits,
@@ -36,7 +36,7 @@ impl UnitScraper {
     }
 }
 
-impl TeePeeScraper<Unit, UnitScraperMode> for UnitScraper {
+impl Scraper<Unit, UnitScraperMode> for UnitScraper {
     fn scrape(&mut self, mode: UnitScraperMode) -> Result<Vec<Unit>> {
         match mode {
             MyUnits => self.scrape_my_units(),
@@ -65,8 +65,8 @@ impl UnitScraper {
         for unit_element in html.select(&outer_selector) {
             let mut unit_builder = Unit::builder();
 
-            unit_builder.id(extract_unit_id(unit_element, &inner_selector)?);
-            unit_builder.name(&extract_unit_name(unit_element, &inner_selector)?);
+            unit_builder.id(extract_id(unit_element, &inner_selector)?);
+            unit_builder.name(&extract_name(unit_element, &inner_selector)?);
 
             self.my_units.push(unit_builder.build()?);
         }
@@ -90,8 +90,8 @@ impl UnitScraper {
         for unit_element in html.select(&outer_selector) {
             let mut unit_builder = Unit::builder();
 
-            unit_builder.name(&extract_unit_name(unit_element, &name_selector)?);
-            unit_builder.id(extract_unit_id(unit_element, &id_selector)?);
+            unit_builder.name(&extract_name(unit_element, &name_selector)?);
+            unit_builder.id(extract_id(unit_element, &id_selector)?);
 
             parent_unit.add_child_unit(unit_builder.build()?);
         }
@@ -105,30 +105,4 @@ impl Unit {
         scraper.scrape_child_units(self)?;
         Ok(())
     }
-}
-
-fn extract_unit_id(menu_element: ElementRef, id_selector: &Selector) -> Result<u32> {
-    let re = Regex::new(r"/units/(\d+)/detail")?;
-
-    menu_element
-        .select(id_selector)
-        .next()
-        .and_then(|id_element| id_element.value().attr("href"))
-        .and_then(|unit_link| re.captures(unit_link))
-        .and_then(|unit_id_capture| unit_id_capture.get(1))
-        .map_or_else(
-            || Err(anyhow!("Could not find id")),
-            |unit_id| unit_id.as_str().parse::<u32>().map_err(|e| anyhow!(e)),
-        )
-}
-
-fn extract_unit_name(menu_element: ElementRef, name_selector: &Selector) -> Result<String> {
-    menu_element
-        .select(name_selector)
-        .next()
-        .and_then(|name_element| name_element.text().next())
-        .map_or_else(
-            || Err(anyhow!("Could not find name")),
-            |name| Ok(name.into()),
-        )
 }
