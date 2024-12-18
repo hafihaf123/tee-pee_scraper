@@ -1,4 +1,5 @@
-use crate::objects::{Person, Unit};
+use crate::object::builder::{ObjectBuilder, PersonBuilder};
+use crate::object::{Object, Person, Unit};
 use crate::scraping::scraper_mode::ScraperMode;
 use crate::scraping::utils::{create_selector, extract_id, extract_name, fetch_html};
 use crate::scraping::Scraper;
@@ -10,7 +11,7 @@ pub enum PersonScraperMode {
     FromUnit(Unit),
 }
 
-impl ScraperMode<Person> for PersonScraperMode {}
+impl ScraperMode<Person, PersonBuilder> for PersonScraperMode {}
 
 pub struct PersonScraper {
     client: TeePeeClient,
@@ -24,7 +25,7 @@ impl PersonScraper {
     }
 }
 
-impl Scraper<Person, PersonScraperMode> for PersonScraper {
+impl Scraper<Person, PersonBuilder, PersonScraperMode> for PersonScraper {
     fn scrape(&mut self, mode: PersonScraperMode) -> Result<Vec<Person>> {
         match mode {
             FromUnit(unit) => self.scrape_from_unit(unit),

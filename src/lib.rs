@@ -1,6 +1,6 @@
 pub mod authentication;
 
-pub mod objects;
+pub mod object;
 
 pub mod scraping;
 

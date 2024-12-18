@@ -1,32 +1,19 @@
-use crate::objects::teepee_object::TeePeeObject;
+/*use crate::object::object::Object;
+use anyhow::{anyhow, Result};
 
 #[derive(Default)]
 pub struct Parent {
     name: String,
-    surname: String,
     phone: Option<String>,
     email: Option<String>,
 }
 
 impl Parent {
-    pub fn new(name: &str, surname: &str) -> Self {
+    pub fn new(name: &str) -> Self {
         Self {
-            name: name.into(),
-            surname: surname.into(),
+            name: name.to_owned(),
             ..Default::default()
         }
-    }
-
-    pub fn builder() -> ParentBuilder {
-        ParentBuilder::new()
-    }
-
-    pub fn name(&self) -> &str {
-        &self.name
-    }
-
-    pub fn surname(&self) -> &str {
-        &self.surname
     }
 
     pub fn phone(&self) -> &Option<String> {
@@ -38,12 +25,9 @@ impl Parent {
     }
 }
 
-impl TeePeeObject for Parent {}
-
 #[derive(Default)]
 pub struct ParentBuilder {
-    name: String,
-    surname: String,
+    name: Option<String>,
     phone: Option<String>,
     email: Option<String>,
 }
@@ -53,22 +37,18 @@ impl ParentBuilder {
         Self::default()
     }
 
-    pub fn build(self) -> Parent {
-        Parent {
-            name: self.name,
-            surname: self.surname,
+    pub fn build(self) -> Result<Parent> {
+        let name = self.name.ok_or_else(|| anyhow!("name is required"))?;
+
+        Ok(Parent {
+            name,
             phone: self.phone,
             email: self.email,
-        }
+        })
     }
 
     pub fn name(&mut self, name: &str) -> &mut Self {
-        self.name = name.into();
-        self
-    }
-
-    pub fn surname(&mut self, surname: &str) -> &mut Self {
-        self.surname = surname.into();
+        self.name = Some(name.into());
         self
     }
 
@@ -82,3 +62,4 @@ impl ParentBuilder {
         self
     }
 }
+*/

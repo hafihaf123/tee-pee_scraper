@@ -1,3 +1,4 @@
-use crate::objects::TeePeeObject;
+use crate::object::builder::ObjectBuilder;
+use crate::object::Object;
 
-pub trait ScraperMode<T: TeePeeObject> {}
+pub trait ScraperMode<T: Object<B>, B: ObjectBuilder<T>> {}

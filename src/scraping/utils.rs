@@ -1,3 +1,5 @@
+use crate::object::builder::ObjectBuilder;
+use crate::object::Object;
 use crate::TeePeeClient;
 use anyhow::{anyhow, Result};
 use regex::Regex;
@@ -45,4 +47,28 @@ pub(super) fn extract_name(menu_element: ElementRef, name_selector: &Selector) -
             || Err(anyhow!("Could not find name")),
             |name| Ok(name.into()),
         )
+}
+
+pub(super) fn scrape_from_url<U: IntoUrl + Copy + Debug, T: Object<B>, B: ObjectBuilder<T>>(
+    client: &TeePeeClient,
+    url: U,
+    selectors: [&str; 3],
+    container: &mut Vec<T>,
+) -> Result<()> {
+    let html = fetch_html(&client, url)?;
+
+    let outer_selector = create_selector(selectors[0])?;
+    let name_selector = create_selector(selectors[1])?;
+    let id_selector = create_selector(selectors[2])?;
+
+    for unit_element in html.select(&outer_selector) {
+        let mut builder = T::builder();
+
+        builder.id(extract_id(unit_element, &id_selector)?);
+        builder.name(&extract_name(unit_element, &name_selector)?);
+
+        container.push(builder.build()?);
+    }
+
+    Ok(())
 }

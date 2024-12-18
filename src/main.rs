@@ -2,6 +2,7 @@ use anyhow::{Context, Result};
 use rpassword::prompt_password;
 use std::io::Write;
 use tee_pee_scraper::authentication::Credentials;
+use tee_pee_scraper::object::Object;
 use tee_pee_scraper::scraping::{FromUnit, MyUnits, PersonScraper, Scraper, UnitScraper};
 use tee_pee_scraper::TeePeeClient;
 
@@ -39,7 +40,9 @@ fn main() -> Result<()> {
             if child.name().eq("Húsenice") {
                 println!("\n{} unit persons:\n", child.name());
                 let mut person_scraper = PersonScraper::new(&tee_pee_client);
-                let persons = person_scraper.scrape(FromUnit(child.clone())).expect("Failed to scrape persons");
+                let persons = person_scraper
+                    .scrape(FromUnit(child.clone()))
+                    .expect("Failed to scrape persons");
                 for person in persons {
                     println!("{}", person.name());
                 }
