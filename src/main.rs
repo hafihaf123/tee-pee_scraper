@@ -2,41 +2,62 @@ use anyhow::{Context, Result};
 use rpassword::prompt_password;
 use std::io::Write;
 use tee_pee_scraper::authentication::Credentials;
-use tee_pee_scraper::scraping::{ChildUnits, MyUnits, TeePeeScraper, UnitScraper};
+use tee_pee_scraper::scraping::{MyUnits, TeePeeScraper, UnitScraper};
 use tee_pee_scraper::TeePeeClient;
 
 fn main() -> Result<()> {
     let username = read_from_stdin("Username: ")?;
 
     let credentials = Credentials::new(&username)?;
-    if !credentials.has_password() {
-        let password = prompt_password("Password: ")?;
-        credentials.set_password(&password)?;
-    }
 
     let tee_pee_client = TeePeeClient::default();
 
-    tee_pee_client.login(&credentials)?;
+    loop {
+        if !credentials.has_password() {
+            let password = prompt_password("Password: ")?;
+            credentials.set_password(&password)?;
+        }
+        match tee_pee_client.login(&credentials) {
+            Ok(_) => break,
+            Err(e) => {
+                credentials.remove_password()?;
+                if !e.to_string().contains("Authentication failed") {
+                    return Err(e);
+                }
+                eprintln!("{}", e);
+            }
+        }
+    }
 
     let mut unit_scraper = UnitScraper::new(&tee_pee_client);
 
     println!("Your Units:");
-    for unit in unit_scraper.scrape(MyUnits)? {
+    for mut unit in unit_scraper.scrape(MyUnits)? {
         println!("{}", unit);
 
-        unit_scraper
-            .scrape(ChildUnits(unit))?
-            .iter()
-            .for_each(|unit| {
-                println!("   {}", unit);
-                unit_scraper
-                    .scrape(ChildUnits(unit.clone()))
-                    .unwrap()
-                    .iter()
-                    .for_each(|unit| {
-                        println!("      {}", unit);
-                    })
-            });
+        unit.scrape_child_units(&mut unit_scraper)?;
+        unit.into_child_units().iter_mut().for_each(|child| {
+            println!("   {}", child);
+            child.scrape_child_units(&mut unit_scraper).unwrap();
+            child
+                .child_units()
+                .iter()
+                .for_each(|child| println!("      {}", child));
+        });
+
+        /*unit_scraper
+        .scrape(ChildUnits(unit))?
+        .iter()
+        .for_each(|unit| {
+            println!("   {}", unit);
+            unit_scraper
+                .scrape(ChildUnits(unit.clone()))
+                .unwrap()
+                .iter()
+                .for_each(|unit| {
+                    println!("      {}", unit);
+                })
+        });*/
     }
 
     Ok(())

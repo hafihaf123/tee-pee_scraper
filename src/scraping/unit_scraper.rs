@@ -1,7 +1,7 @@
 use crate::objects::Unit;
 use crate::scraping::teepee_scraper::TeePeeScraper;
 use crate::scraping::utils::{create_selector, fetch_html};
-use crate::scraping::ScraperMode;
+use crate::scraping::{ChildUnits, MyUnits, ScraperMode};
 use crate::TeePeeClient;
 use anyhow::{anyhow, Result};
 use regex::Regex;
@@ -26,13 +26,24 @@ impl UnitScraper {
             my_units: Vec::new(),
         }
     }
+
+    pub fn get_my_units(&self) -> &Vec<Unit> {
+        &self.my_units
+    }
+
+    pub fn into_my_units(self) -> Vec<Unit> {
+        self.my_units
+    }
 }
 
 impl TeePeeScraper<Unit, UnitScraperMode> for UnitScraper {
     fn scrape(&mut self, mode: UnitScraperMode) -> Result<Vec<Unit>> {
         match mode {
-            UnitScraperMode::MyUnits => self.scrape_my_units(),
-            UnitScraperMode::ChildUnits(parent_unit) => self.scrape_child_units(parent_unit),
+            MyUnits => self.scrape_my_units(),
+            ChildUnits(mut parent_unit) => {
+                self.scrape_child_units(&mut parent_unit)?;
+                Ok(parent_unit.into_child_units())
+            }
         }
     }
 }
@@ -40,7 +51,7 @@ impl TeePeeScraper<Unit, UnitScraperMode> for UnitScraper {
 impl UnitScraper {
     fn scrape_my_units(&mut self) -> Result<Vec<Unit>> {
         if !self.my_units.is_empty() {
-            return Ok(self.my_units.clone());
+            self.my_units.clear();
         }
 
         let html = fetch_html(
@@ -48,29 +59,22 @@ impl UnitScraper {
             "https://skauting.tee-pee.com/user/profile#data",
         )?;
 
-        let selector = create_selector("li#j_idt51\\:layoutMenu_5 ul li a")?;
+        let outer_selector = create_selector("li#j_idt51\\:layoutMenu_5 ul li")?;
+        let inner_selector = create_selector("a")?;
 
-        let re = Regex::new(r"/units/(\d+)/detail")?;
-
-        for unit_element in html.select(&selector) {
+        for unit_element in html.select(&outer_selector) {
             let mut unit_builder = Unit::builder();
-            if let Some(unit_link) = unit_element.value().attr("href") {
-                if let Some(unit_id_capture) = re.captures(unit_link) {
-                    if let Some(unit_id) = unit_id_capture.get(1) {
-                        unit_builder.id(unit_id.as_str().parse()?);
-                    }
-                }
-            }
-            if let Some(unit_name) = unit_element.text().next() {
-                unit_builder.name(unit_name);
-            }
+
+            unit_builder.id(extract_unit_id(unit_element, &inner_selector)?);
+            unit_builder.name(&extract_unit_name(unit_element, &inner_selector)?);
+
             self.my_units.push(unit_builder.build()?);
         }
 
         Ok(self.my_units.clone())
     }
 
-    fn scrape_child_units(&self, mut parent_unit: Unit) -> Result<Vec<Unit>> {
+    fn scrape_child_units(&self, parent_unit: &mut Unit) -> Result<()> {
         let parent_unit_url = format!(
             "https://skauting.tee-pee.com/units/{}/detail#units",
             parent_unit.id()
@@ -83,22 +87,23 @@ impl UnitScraper {
         let name_selector = create_selector("span.ListItemName")?;
         let id_selector = create_selector("a.ui-link.ui-widget")?;
 
-        for menu_element in html.select(&outer_selector) {
+        for unit_element in html.select(&outer_selector) {
             let mut unit_builder = Unit::builder();
 
-            if let Some(name_element) = menu_element.select(&name_selector).next() {
-                if let Some(unit_name) = name_element.text().next() {
-                    unit_builder.name(unit_name);
-                }
-            }
-
-            let unit_id = extract_unit_id(menu_element, &id_selector)?;
-            unit_builder.id(unit_id);
+            unit_builder.name(&extract_unit_name(unit_element, &name_selector)?);
+            unit_builder.id(extract_unit_id(unit_element, &id_selector)?);
 
             parent_unit.add_child_unit(unit_builder.build()?);
         }
 
-        Ok(parent_unit.into_child_units())
+        Ok(())
+    }
+}
+
+impl Unit {
+    pub fn scrape_child_units(&mut self, scraper: &mut UnitScraper) -> Result<()> {
+        scraper.scrape_child_units(self)?;
+        Ok(())
     }
 }
 
@@ -114,5 +119,16 @@ fn extract_unit_id(menu_element: ElementRef, id_selector: &Selector) -> Result<u
         .map_or_else(
             || Err(anyhow!("Could not find id")),
             |unit_id| unit_id.as_str().parse::<u32>().map_err(|e| anyhow!(e)),
+        )
+}
+
+fn extract_unit_name(menu_element: ElementRef, name_selector: &Selector) -> Result<String> {
+    menu_element
+        .select(name_selector)
+        .next()
+        .and_then(|name_element| name_element.text().next())
+        .map_or_else(
+            || Err(anyhow!("Could not find name")),
+            |name| Ok(name.into()),
         )
 }

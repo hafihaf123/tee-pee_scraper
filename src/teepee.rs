@@ -40,7 +40,7 @@ impl TeePeeClient {
             .with_context(|| "Sending login POST request failed")?;
 
         if login_response_body.contains("Nesprávne používateľské meno alebo heslo") {
-            return Err(anyhow!("Login Failed"));
+            return Err(anyhow!("Authentication failed"));
         }
 
         Ok(())

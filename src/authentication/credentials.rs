@@ -34,4 +34,8 @@ impl Credentials {
     pub fn set_password(&self, password: &str) -> keyring::Result<()> {
         self.password.set_password(password)
     }
+    
+    pub fn remove_password(&self) -> keyring::Result<()> {
+        self.password.delete_credential()
+    }
 }
