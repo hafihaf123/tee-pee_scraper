@@ -14,3 +14,4 @@ keyring = { version = "3.6.1", features = ["apple-native", "windows-native", "li
 
 [dev-dependencies]
 dotenv = "0.15.0"
+mockito = "1.6.1"

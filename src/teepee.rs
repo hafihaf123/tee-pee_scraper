@@ -84,8 +84,62 @@ impl Default for TeePeeClient {
         Self {
             client: Client::builder()
                 .cookie_store(true)
+                .https_only(true)
                 .build()
                 .expect("Failed to build client"),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::teepee::extract_view_state;
+    use crate::TeePeeClient;
+    use reqwest::blocking::Client;
+    use reqwest::Url;
+
+    #[test]
+    fn test_extract_view_state() {
+        let html =
+            "<input type=\"hidden\" name=\"javax.faces.ViewState\" value=\"test_view_state\" />";
+        assert_eq!(
+            extract_view_state(html),
+            Some("test_view_state".to_string())
+        );
+
+        let html_missing = "<html><body>No view state here</body></html>";
+        assert_eq!(extract_view_state(html_missing), None);
+    }
+
+    #[test]
+    fn test_get_view_state_success() {
+        let mut server = mockito::Server::new();
+        let _mock_page = server.mock("GET", "/some_page")
+            .with_status(200)
+            .with_body("<input type=\"hidden\" name=\"javax.faces.ViewState\" value=\"test_view_state\" />")
+            .create();
+
+        let client = TeePeeClient::new(Client::new());
+        let url = Url::parse(&server.url()).unwrap();
+        let result = client
+            .get_view_state(url.join("some_page").unwrap().as_str())
+            .unwrap();
+
+        assert_eq!(result, "test_view_state".to_string());
+    }
+
+    #[test]
+    fn test_get_view_state_failure() {
+        let mut server = mockito::Server::new();
+        let _mock_page = server
+            .mock("GET", "/some_page")
+            .with_status(200)
+            .with_body("<html><body>No view state here</body></html>")
+            .create();
+
+        let client = TeePeeClient::new(Client::new());
+        let result = client.get_view_state(&format!("{}/some_page", server.url()));
+
+        assert!(result.is_err());
     }
 }

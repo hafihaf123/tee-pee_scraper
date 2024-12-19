@@ -63,7 +63,7 @@ impl Person {
     // pub fn parents(&self) -> &Vec<Parent> {
     //     &self.parents
     // }
-    // 
+    //
     // pub fn add_parent(&mut self, parent: Parent) {
     //     self.parents.push(parent);
     // }
