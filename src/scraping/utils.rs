@@ -14,15 +14,6 @@ pub(super) fn fetch_html<U: IntoUrl + Copy + Debug>(
     Ok(Html::parse_document(&client.get(parent_unit_url)?))
 }
 
-pub(super) fn create_selector(selectors: &str) -> Result<Selector> {
-    Ok(match Selector::parse(selectors) {
-        Ok(selector) => selector,
-        Err(e) => {
-            return Err(anyhow!("Parsing a selector failed: {}", e));
-        }
-    })
-}
-
 pub(super) fn extract_id(menu_element: ElementRef, id_selector: &Selector) -> Result<u32> {
     let re = Regex::new(r"/\w+/(\d+)/detail")?;
 
@@ -57,9 +48,9 @@ pub(super) fn scrape_from_url<U: IntoUrl + Copy + Debug, T: Object<B>, B: Object
 ) -> Result<()> {
     let html = fetch_html(&client, url)?;
 
-    let outer_selector = create_selector(selectors[0])?;
-    let name_selector = create_selector(selectors[1])?;
-    let id_selector = create_selector(selectors[2])?;
+    let outer_selector = crate::create_selector(selectors[0])?;
+    let name_selector = crate::create_selector(selectors[1])?;
+    let id_selector = crate::create_selector(selectors[2])?;
 
     for unit_element in html.select(&outer_selector) {
         let mut builder = T::builder();
