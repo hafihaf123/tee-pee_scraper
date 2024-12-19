@@ -16,6 +16,11 @@ fn test_login_invalid() {
 
     credentials.set_password("invalid").unwrap();
     assert!(client.login(&credentials).is_err());
+
+    assert!(client
+        .get("https://skauting.tee-pee.com")
+        .unwrap()
+        .contains("Login"))
 }
 
 #[test]

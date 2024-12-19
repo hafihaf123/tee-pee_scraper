@@ -6,6 +6,22 @@ use scraper::{Html, Selector};
 use serde::Serialize;
 use std::fmt::Debug;
 
+/// A client used to interact with the <https://skauting.tee-pee.com> site
+///
+/// # Construction
+///
+/// It is recommended to use [`TeePeeClient::default()`] to construct an instance.
+/// Only use [`TeePeeClient::new()`] when you know what you are doing and look at its documentation first.
+/// 
+/// # Examples
+/// ```
+/// # use tee_pee_scraper::authentication::Credentials;
+/// use tee_pee_scraper::TeePeeClient;
+/// let teepee = TeePeeClient::default();
+/// # let credentials = Credentials::new("username").unwrap();
+/// # credentials.set_password("pass").unwrap();
+/// assert!(teepee.login(&credentials).is_err()) // because wrong credentials were used
+/// ```
 #[derive(Clone)]
 pub struct TeePeeClient {
     client: Client,
@@ -114,7 +130,7 @@ mod tests {
     #[test]
     fn test_get_view_state_success() {
         let mut server = mockito::Server::new();
-        let _mock_page = server.mock("GET", "/some_page")
+        server.mock("GET", "/some_page")
             .with_status(200)
             .with_body("<input type=\"hidden\" name=\"javax.faces.ViewState\" value=\"test_view_state\" />")
             .create();
@@ -131,7 +147,7 @@ mod tests {
     #[test]
     fn test_get_view_state_failure() {
         let mut server = mockito::Server::new();
-        let _mock_page = server
+        server
             .mock("GET", "/some_page")
             .with_status(200)
             .with_body("<html><body>No view state here</body></html>")
