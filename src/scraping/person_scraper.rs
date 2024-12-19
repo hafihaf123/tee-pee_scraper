@@ -1,9 +1,10 @@
+use crate::create_selector;
 use crate::object::builder::{ObjectBuilder, PersonBuilder};
 use crate::object::{Object, Person, Unit};
 use crate::scraping::scraper_mode::ScraperMode;
 use crate::scraping::utils::{extract_id, extract_name, fetch_html};
 use crate::scraping::Scraper;
-use crate::{create_selector, TeePeeClient};
+use crate::TeePeeClient;
 use anyhow::Result;
 use PersonScraperMode::FromUnit;
 

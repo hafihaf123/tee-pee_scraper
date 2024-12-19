@@ -48,9 +48,9 @@ pub(super) fn scrape_from_url<U: IntoUrl + Copy + Debug, T: Object<B>, B: Object
 ) -> Result<()> {
     let html = fetch_html(&client, url)?;
 
-    let outer_selector = crate::create_selector(selectors[0])?;
-    let name_selector = crate::create_selector(selectors[1])?;
-    let id_selector = crate::create_selector(selectors[2])?;
+    let outer_selector = crate::utils::create_selector(selectors[0])?;
+    let name_selector = crate::utils::create_selector(selectors[1])?;
+    let id_selector = crate::utils::create_selector(selectors[2])?;
 
     for unit_element in html.select(&outer_selector) {
         let mut builder = T::builder();
