@@ -1,3 +1,4 @@
+use std::time::Duration;
 use crate::objects::builders::UnitBuilder;
 use crate::objects::Unit;
 use crate::scraping::scraper_mode::ScraperMode;
@@ -5,6 +6,7 @@ use crate::scraping::utils::scrape_from_url;
 use crate::scraping::{ChildUnits, MyUnits};
 use crate::{Object, Scraper, TeePeeClient};
 use anyhow::Result;
+use indicatif::ProgressBar;
 
 pub enum UnitScraperMode {
     MyUnits,
@@ -28,13 +30,20 @@ impl UnitScraper {
 
 impl Scraper<Unit, UnitBuilder, UnitScraperMode> for UnitScraper {
     fn scrape(&mut self, mode: UnitScraperMode) -> Result<Vec<Unit>> {
-        match mode {
+        let bar = ProgressBar::new_spinner();
+        bar.set_message("Scraping...");
+        bar.enable_steady_tick(Duration::from_millis(100));
+        
+        let result = match mode {
             MyUnits => self.scrape_my_units(),
             ChildUnits(mut parent_unit) => {
                 self.scrape_child_units(&mut parent_unit)?;
                 Ok(parent_unit.into_child_units())
             } // AllData(unit) => {}
-        }
+        };
+        
+        bar.finish_and_clear();
+        result
     }
 }
 

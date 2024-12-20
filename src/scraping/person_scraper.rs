@@ -1,9 +1,11 @@
+use std::time::Duration;
 use crate::objects::builders::{ObjectBuilder, PersonBuilder};
 use crate::objects::{Person, Unit};
 use crate::scraping::scraper_mode::ScraperMode;
 use crate::scraping::utils::{extract_id, extract_name, fetch_html};
 use crate::{create_selector, Object, Scraper, TeePeeClient};
 use anyhow::Result;
+use indicatif::ProgressBar;
 use PersonScraperMode::FromUnit;
 
 pub enum PersonScraperMode {
@@ -26,9 +28,16 @@ impl PersonScraper {
 
 impl Scraper<Person, PersonBuilder, PersonScraperMode> for PersonScraper {
     fn scrape(&mut self, mode: PersonScraperMode) -> Result<Vec<Person>> {
-        match mode {
+        let bar = ProgressBar::new_spinner();
+        bar.set_message("Scraping...");
+        bar.enable_steady_tick(Duration::from_millis(100));
+
+        let result = match mode {
             FromUnit(unit) => self.scrape_from_unit(unit),
-        }
+        };
+        
+        bar.finish_and_clear();
+        result
     }
 }
 
