@@ -1,5 +1,5 @@
-use crate::object::builder::ObjectBuilder;
-use crate::object::Object;
+use crate::objects::builders::ObjectBuilder;
+use crate::objects::Object;
 use crate::scraping::scraper_mode::ScraperMode;
 use anyhow::Result;
 

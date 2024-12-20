@@ -1,6 +1,6 @@
-use crate::object::builder::ObjectBuilder;
-use crate::object::person::Gender;
-use crate::object::Person;
+use crate::objects::builders::ObjectBuilder;
+use crate::objects::person::Gender;
+use crate::objects::Person;
 use anyhow::anyhow;
 
 #[derive(Default)]

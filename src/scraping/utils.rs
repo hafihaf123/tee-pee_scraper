@@ -1,5 +1,5 @@
-use crate::object::builder::ObjectBuilder;
-use crate::object::Object;
+use crate::objects::builders::ObjectBuilder;
+use crate::objects::Object;
 use crate::TeePeeClient;
 use anyhow::{anyhow, Result};
 use regex::Regex;
@@ -46,7 +46,7 @@ pub(super) fn scrape_from_url<U: IntoUrl + Copy + Debug, T: Object<B>, B: Object
     selectors: [&str; 3],
     container: &mut Vec<T>,
 ) -> Result<()> {
-    let html = fetch_html(&client, url)?;
+    let html = fetch_html(client, url)?;
 
     let outer_selector = crate::utils::create_selector(selectors[0])?;
     let name_selector = crate::utils::create_selector(selectors[1])?;

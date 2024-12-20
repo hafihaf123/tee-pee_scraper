@@ -19,9 +19,10 @@ use std::fmt::Debug;
 /// # use tee_pee_scraper::authentication::Credentials;
 /// use tee_pee_scraper::TeePeeClient;
 /// let teepee = TeePeeClient::default();
-/// # let credentials = Credentials::new("username").unwrap();
+/// # let credentials = Credentials::new("teepee").unwrap();
 /// # credentials.set_password("pass").unwrap();
 /// assert!(teepee.login(&credentials).is_err()); // wrong credentials were used
+/// # credentials.remove_password().unwrap();
 /// ```
 #[derive(Clone)]
 pub struct TeePeeClient {
@@ -35,7 +36,7 @@ fn extract_view_state(html: &str) -> Result<String> {
         .select(&selector)
         .next()
         .and_then(|input| input.value().attr("value"))
-        .map(|v| v.to_string())
+        .map(ToString::to_string)
         .ok_or_else(|| anyhow::anyhow!("Could not find view state"))
 }
 
@@ -61,6 +62,7 @@ impl TeePeeClient {
     ///                             .build().unwrap();
     /// let teepee = TeePeeClient::new(client);
     /// ```
+    #[must_use]
     pub fn new(client: Client) -> Self {
         Self { client }
     }
@@ -73,7 +75,7 @@ impl TeePeeClient {
     /// - The client field must have a cookie store implemented
     ///     - the [`TeePeeClient::default()`] function sets it up for you!
     ///     - when constructing using [`TeePeeClient::new()`], the client you pass into it needs to
-    /// be built with `.cookie_store(true)` or `.cookie_provider(...)`
+    ///       be built with `.cookie_store(true)` or `.cookie_provider(...)`
     ///
     /// # Errors
     ///
@@ -91,10 +93,11 @@ impl TeePeeClient {
     /// use tee_pee_scraper::TeePeeClient;
     /// let teepee = TeePeeClient::default();
     ///
-    /// let credentials = Credentials::new("username").unwrap();
+    /// let credentials = Credentials::new("teepee_login").unwrap();
     /// credentials.set_password("password").unwrap();
     ///
     /// assert!(teepee.login(&credentials).is_err()); // Authentication failed
+    /// # credentials.remove_password().unwrap();
     /// ```
     pub fn login(&self, credentials: &Credentials) -> Result<()> {
         let login_url = "https://skauting.tee-pee.com/login";
@@ -131,13 +134,12 @@ impl TeePeeClient {
     /// assert!(login_page_text.contains("Login"));
     /// ```
     pub fn get<U: IntoUrl + Copy + Debug>(&self, url: U) -> Result<String> {
-        Ok(self
-            .client
+        self.client
             .get(url)
             .send()
-            .with_context(|| format!("Failed to send request to '{:?}'", url))?
+            .with_context(|| format!("Failed to send request to '{url:?}'"))?
             .text()
-            .with_context(|| format!("Failed to parse response text from '{:?}'", url))?)
+            .with_context(|| format!("Failed to parse response text from '{url:?}'"))
     }
 
     /// Processes a post request containing a form to an url using the [`TeePeeClient`], returning
@@ -164,21 +166,20 @@ impl TeePeeClient {
         url: U,
         form: &T,
     ) -> Result<String> {
-        Ok(self
-            .client
+        self.client
             .post(url)
             .form(form)
             .send()
-            .with_context(|| format!("Failed to send request to '{:?}'", url))?
+            .with_context(|| format!("Failed to send request to '{url:?}'"))?
             .text()
-            .with_context(|| format!("Failed to parse response text from '{:?}'", url))?)
+            .with_context(|| format!("Failed to parse response text from '{url:?}'"))
     }
 
     fn get_view_state<U: IntoUrl + Copy + Debug>(&self, url: U) -> Result<String> {
         let page_text = self.get(url)?;
 
-        Ok(extract_view_state(&page_text)
-            .with_context(|| format!("Failed to extract view state from page: '{:?}'", url))?)
+        extract_view_state(&page_text)
+            .with_context(|| format!("Failed to extract view state from page: '{url:?}'"))
     }
 }
 

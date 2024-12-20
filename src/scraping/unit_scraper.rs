@@ -1,5 +1,5 @@
-use crate::object::builder::UnitBuilder;
-use crate::object::{Object, Unit};
+use crate::objects::builders::UnitBuilder;
+use crate::objects::{Object, Unit};
 use crate::scraping::scraper::Scraper;
 use crate::scraping::scraper_mode::ScraperMode;
 use crate::scraping::utils::scrape_from_url;
@@ -61,7 +61,7 @@ impl UnitScraper {
         let mut my_units = Vec::new();
 
         for unit_element in html.select(&outer_selector) {
-            let mut unit_builder = Unit::builder();
+            let mut unit_builder = Unit::builders();
 
             unit_builder.id(extract_id(unit_element, &inner_selector)?);
             unit_builder.name(&extract_name(unit_element, &inner_selector)?);
@@ -100,7 +100,7 @@ impl UnitScraper {
         let id_selector = create_selector("a.ui-link.ui-widget")?;
 
         for unit_element in html.select(&outer_selector) {
-            let mut unit_builder = Unit::builder();
+            let mut unit_builder = Unit::builders();
 
             unit_builder.name(&extract_name(unit_element, &name_selector)?);
             unit_builder.id(extract_id(unit_element, &id_selector)?);

@@ -7,7 +7,7 @@ pub use person::Person;
 mod object;
 pub use object::Object;
 
-pub mod builder;
+pub mod builders;
 
 mod unit;
 pub use unit::Unit;

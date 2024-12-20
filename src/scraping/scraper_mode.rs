@@ -1,4 +1,4 @@
-use crate::object::builder::ObjectBuilder;
-use crate::object::Object;
+use crate::objects::builders::ObjectBuilder;
+use crate::objects::Object;
 
 pub trait ScraperMode<T: Object<B>, B: ObjectBuilder<T>> {}

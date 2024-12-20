@@ -1,6 +1,6 @@
-use crate::object::builder::ObjectBuilder;
-use crate::object::unit::UnitType;
-use crate::object::Unit;
+use crate::objects::builders::ObjectBuilder;
+use crate::objects::unit::UnitType;
+use crate::objects::Unit;
 use anyhow::anyhow;
 
 #[derive(Default)]

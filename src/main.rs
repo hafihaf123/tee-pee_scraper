@@ -2,7 +2,7 @@ use anyhow::{Context, Result};
 use rpassword::prompt_password;
 use std::io::Write;
 use tee_pee_scraper::authentication::Credentials;
-use tee_pee_scraper::object::Object;
+use tee_pee_scraper::objects::Object;
 use tee_pee_scraper::scraping::{FromUnit, MyUnits, PersonScraper, Scraper, UnitScraper};
 use tee_pee_scraper::TeePeeClient;
 
