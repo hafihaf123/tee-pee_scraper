@@ -1,4 +1,5 @@
 mod credentials;
+#[doc(inline)]
 pub use credentials::Credentials;
 
 mod login_form;

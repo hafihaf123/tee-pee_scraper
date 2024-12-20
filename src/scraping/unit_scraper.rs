@@ -1,10 +1,9 @@
 use crate::objects::builders::UnitBuilder;
-use crate::objects::{Object, Unit};
-use crate::scraping::scraper::Scraper;
+use crate::objects::Unit;
 use crate::scraping::scraper_mode::ScraperMode;
 use crate::scraping::utils::scrape_from_url;
 use crate::scraping::{ChildUnits, MyUnits};
-use crate::TeePeeClient;
+use crate::{Object, Scraper, TeePeeClient};
 use anyhow::Result;
 
 pub enum UnitScraperMode {

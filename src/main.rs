@@ -1,10 +1,9 @@
 use anyhow::{Context, Result};
 use rpassword::prompt_password;
 use std::io::Write;
-use tee_pee_scraper::authentication::Credentials;
-use tee_pee_scraper::objects::Object;
-use tee_pee_scraper::scraping::{FromUnit, MyUnits, PersonScraper, Scraper, UnitScraper};
-use tee_pee_scraper::TeePeeClient;
+use tee_pee_scraper::scraping::{FromUnit, MyUnits, PersonScraper, UnitScraper};
+use tee_pee_scraper::Object;
+use tee_pee_scraper::{Credentials, Scraper, TeePeeClient};
 
 fn main() -> Result<()> {
     let username = read_from_stdin("Username: ")?;
@@ -18,13 +17,13 @@ fn main() -> Result<()> {
             credentials.set_password(&password)?;
         }
         match tee_pee_client.login(&credentials) {
-            Ok(_) => break,
+            Ok(()) => break,
             Err(e) => {
                 credentials.remove_password()?;
                 if !e.to_string().contains("Authentication failed") {
                     return Err(e);
                 }
-                eprintln!("{}", e);
+                eprintln!("{e}");
             }
         }
     }
@@ -33,7 +32,7 @@ fn main() -> Result<()> {
 
     println!("Your Units:");
     for mut unit in unit_scraper.scrape(MyUnits)? {
-        println!("{}", unit);
+        println!("{unit}");
 
         unit.scrape_child_units(&mut unit_scraper)?;
         unit.into_child_units().iter_mut().for_each(|child| {
@@ -55,7 +54,7 @@ fn main() -> Result<()> {
 }
 
 pub fn read_from_stdin(message: &str) -> Result<String> {
-    print!("{}", message);
+    print!("{message}");
     std::io::stdout().flush()?;
     let mut read_string = String::new();
     std::io::stdin()

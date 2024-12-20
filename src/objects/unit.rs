@@ -1,5 +1,5 @@
 use crate::objects::builders::UnitBuilder;
-use crate::objects::object::Object;
+use crate::objects::Object;
 use std::fmt::{Display, Formatter};
 
 #[derive(Clone, Debug)]

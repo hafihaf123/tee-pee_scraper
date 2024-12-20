@@ -1,4 +1,4 @@
-use crate::objects::Object;
+use crate::Object;
 
 pub trait ObjectBuilder<T: Object<Self>>: Sized + Default {
     fn name(&mut self, name: &str) -> &mut Self;

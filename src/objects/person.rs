@@ -1,5 +1,5 @@
 use crate::objects::builders::PersonBuilder;
-use crate::objects::object::Object;
+use crate::objects::Object;
 
 pub enum Gender {
     Male,

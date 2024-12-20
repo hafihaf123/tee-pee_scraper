@@ -1,6 +1,5 @@
 use crate::objects::builders::ObjectBuilder;
-use crate::objects::Object;
-use crate::TeePeeClient;
+use crate::{Object, TeePeeClient};
 use anyhow::{anyhow, Result};
 use regex::Regex;
 use reqwest::IntoUrl;

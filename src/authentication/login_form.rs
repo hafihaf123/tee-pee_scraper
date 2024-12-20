@@ -2,6 +2,7 @@ use super::Credentials;
 use anyhow::Result;
 use serde::Serialize;
 
+/// A structure representing the login form data for <https://skauting.tee-pee.som>
 #[derive(Serialize)]
 pub struct LoginForm {
     #[serde(rename = "loginForm")]
@@ -17,6 +18,8 @@ pub struct LoginForm {
 }
 
 impl LoginForm {
+    /// Constructor for [`LoginForm`] from string slices
+    #[must_use]
     pub fn new(username: &str, password: &str, javax_faces_view_state: &str) -> Self {
         Self {
             login_form: "loginForm".to_string(),
@@ -26,6 +29,13 @@ impl LoginForm {
             javax_faces_view_state: javax_faces_view_state.to_string(),
         }
     }
+
+    /// Constructor for [`LoginForm`] using the [`Credentials`] structure
+    ///
+    /// # Errors
+    ///
+    /// - when getting the password from [`Credentials`] fails
+    ///     - see [`Credentials::password()`]
     pub fn from_credentials(
         credentials: &Credentials,
         javax_faces_view_state: &str,
