@@ -1,31 +1,32 @@
 use anyhow::{Context, Result};
-use rpassword::prompt_password;
+use inquire::{Password, Text};
 use std::io::Write;
+use std::sync::Arc;
+use tee_pee_scraper::authentication::PasswordValidator;
 use tee_pee_scraper::scraping::{FromUnit, MyUnits, PersonScraper, UnitScraper};
 use tee_pee_scraper::Object;
 use tee_pee_scraper::{Credentials, Scraper, TeePeeClient};
 
 fn main() -> Result<()> {
-    let username = read_from_stdin("Username: ")?;
-    let credentials = Credentials::new(&username)?;
+    // let username = read_from_stdin("Username: ")?;
+    let username = Text::new("Username:")
+        .with_placeholder("placeholder")
+        .with_help_message("help message")
+        .prompt()
+        .with_context(|| "Failed to read username")?;
 
-    let tee_pee_client = TeePeeClient::default();
+    let credentials = Arc::new(Credentials::new(&username)?);
+    let tee_pee_client = Arc::new(TeePeeClient::default());
 
-    loop {
-        if !credentials.has_password() {
-            let password = prompt_password("Password: ")?;
-            credentials.set_password(&password)?;
-        }
-        match tee_pee_client.login(&credentials) {
-            Ok(()) => break,
-            Err(e) => {
-                credentials.remove_password()?;
-                if !e.to_string().contains("Authentication failed") {
-                    return Err(e);
-                }
-                eprintln!("{e}");
-            }
-        }
+    let password_validator =
+        PasswordValidator::new(Arc::clone(&credentials), Arc::clone(&tee_pee_client));
+    if !credentials.has_password() {
+        let password = Password::new("Password:")
+            .with_validator(password_validator)
+            .without_confirmation()
+            .prompt()
+            .with_context(|| "Failed to read password")?;
+        credentials.set_password(&password)?;
     }
 
     let mut unit_scraper = UnitScraper::new(&tee_pee_client);
@@ -59,6 +60,6 @@ pub fn read_from_stdin(message: &str) -> Result<String> {
     let mut read_string = String::new();
     std::io::stdin()
         .read_line(&mut read_string)
-        .with_context(|| "Failed to read request url from stdin")?;
+        .with_context(|| "Failed to read from stdin")?;
     Ok(read_string.trim().to_string())
 }

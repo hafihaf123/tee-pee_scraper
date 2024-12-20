@@ -11,6 +11,7 @@ scraper = "0.22.0"
 serde = { version = "1.0.216", features = ["derive"] }
 regex = "1.11.1"
 keyring = { version = "3.6.1", features = ["apple-native", "windows-native", "linux-native"] }
+inquire = "0.7.5"
 
 [dev-dependencies]
 dotenv = "0.15.0"
