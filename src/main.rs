@@ -1,17 +1,14 @@
 use anyhow::{Context, Result};
+use indicatif::ProgressBar;
 use inquire::{Password, Text};
-use std::io::Write;
 use std::sync::Arc;
+use std::time::Duration;
 use tee_pee_scraper::authentication::PasswordValidator;
 use tee_pee_scraper::scraping::{FromUnit, MyUnits, PersonScraper, UnitScraper};
-use tee_pee_scraper::Object;
-use tee_pee_scraper::{Credentials, Scraper, TeePeeClient};
+use tee_pee_scraper::{Credentials, Object, Scraper, TeePeeClient};
 
 fn main() -> Result<()> {
-    // let username = read_from_stdin("Username: ")?;
     let username = Text::new("Username:")
-        .with_placeholder("placeholder")
-        .with_help_message("help message")
         .prompt()
         .with_context(|| "Failed to read username")?;
 
@@ -20,18 +17,25 @@ fn main() -> Result<()> {
 
     let password_validator =
         PasswordValidator::new(Arc::clone(&credentials), Arc::clone(&tee_pee_client));
-    if !credentials.has_password() {
-        let password = Password::new("Password:")
+
+    if credentials.has_password() {
+        let bar = ProgressBar::new_spinner();
+        bar.set_message("Authenticating...");
+        bar.enable_steady_tick(Duration::from_millis(100));
+
+        tee_pee_client.login(&credentials)?;
+
+        bar.finish_and_clear();
+    } else {
+        Password::new("Password:")
             .with_validator(password_validator)
             .without_confirmation()
-            .prompt()
-            .with_context(|| "Failed to read password")?;
-        credentials.set_password(&password)?;
+            .prompt()?;
     }
 
     let mut unit_scraper = UnitScraper::new(&tee_pee_client);
 
-    println!("Your Units:");
+    println!("\nYour Units:");
     for mut unit in unit_scraper.scrape(MyUnits)? {
         println!("{unit}");
 
@@ -52,14 +56,4 @@ fn main() -> Result<()> {
     }
 
     Ok(())
-}
-
-pub fn read_from_stdin(message: &str) -> Result<String> {
-    print!("{message}");
-    std::io::stdout().flush()?;
-    let mut read_string = String::new();
-    std::io::stdin()
-        .read_line(&mut read_string)
-        .with_context(|| "Failed to read from stdin")?;
-    Ok(read_string.trim().to_string())
 }
