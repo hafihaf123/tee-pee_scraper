@@ -1,0 +1,111 @@
+name: CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+  CARGO_NET_RETRY: 10
+  CI: 1
+  RUST_BACKTRACE: short
+  RUSTFLAGS: "-Dwarnings -W unreachable-pub -W rust-2021-compatibility"
+  RUSTUP_MAX_RETRIES: 10
+
+jobs:
+  test:
+    environment: test
+    name: Test
+    runs-on: ${{ matrix.os }}
+
+    permissions:
+      contents: read
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # We need to disable the existing toolchain to avoid updating rust-docs
+      # which takes a long time. The fastest way to do this is to rename the
+      # existing folder, as deleting it takes about as much time as not doing
+      # anything and just updating rust-docs.
+      - name: Rename existing rust toolchain (Windows)
+        if: matrix.os == 'windows-latest'
+        run: Rename-Item C:\Users\runneradmin\.rustup\toolchains\stable-x86_64-pc-windows-msvc C:\Users\runneradmin\.rustup\toolchains\stable-x86_64-pc-windows-msvc.old
+      
+      - name: Install Rust toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@97db979bf844c838b06022f305ca480d01b4d5fe
+
+      - name: Cache Dependencies
+        uses: Swatinem/rust-cache@e8e63cdbf2788df3801e6f9a81516b2ca8391886
+          
+      - name: Compile
+        run: cargo test --no-run --locked
+        
+      - name: Test
+        run: cargo test --verbose
+        env:
+          TEST_USERNAME: ${{ secrets.TEST_USERNAME }}
+          TEST_CREDENTIAL: ${{ secrets.TEST_CREDENTIAL }}
+
+  format:
+    name: cargo fmt
+    runs-on: ${{ matrix.os }}
+
+    permissions:
+      contents: read
+  
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Install Rust toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@97db979bf844c838b06022f305ca480d01b4d5fe
+        with:
+          components: rustfmt
+
+      - name: Cache Dependencies
+        uses: Swatinem/rust-cache@e8e63cdbf2788df3801e6f9a81516b2ca8391886
+
+      - name: Rustfmt Check
+        uses: actions-rust-lang/rustfmt@559aa3035a47390ba96088dffa783b5d26da9326
+
+  clippy:
+    name: Clippy
+    runs-on: ${{ matrix.os }}
+
+    permissions:
+      contents: read
+  
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Install Rust toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@97db979bf844c838b06022f305ca480d01b4d5fe
+        with:
+          components: clippy
+
+      - name: Cache Dependencies
+        uses: Swatinem/rust-cache@e8e63cdbf2788df3801e6f9a81516b2ca8391886
+
+      - name: Run Clippy
+        run: cargo clippy --all-targets --all-features

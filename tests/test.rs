@@ -6,7 +6,7 @@ use tee_pee_scraper::TeePeeClient;
 #[test]
 fn test_login_invalid() {
     let client = TeePeeClient::default();
-    dotenv().unwrap();
+    dotenv().ok();
 
     let invalid_credentials = Credentials::new("test_login_invalid").unwrap();
     invalid_credentials.set_password("invalid").unwrap();
@@ -23,7 +23,7 @@ fn test_login_invalid() {
 #[test]
 fn test_login_valid() {
     let client = TeePeeClient::default();
-    dotenv().unwrap();
+    dotenv().ok();
 
     let credentials = Credentials::new(&var("TEST_USERNAME").unwrap()).unwrap();
     credentials
