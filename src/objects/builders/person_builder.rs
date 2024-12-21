@@ -41,7 +41,9 @@ impl PersonBuilder {
     }
 }
 
-impl ObjectBuilder<Person> for PersonBuilder {
+impl ObjectBuilder for PersonBuilder {
+    type Object = Person;
+
     fn name(&mut self, name: &str) -> &mut Self {
         self.name = Some(name.into());
         self

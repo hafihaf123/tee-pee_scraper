@@ -75,7 +75,9 @@ impl Unit {
     }
 }
 
-impl Object<UnitBuilder> for Unit {
+impl Object for Unit {
+    type Builder = UnitBuilder;
+
     fn name(&self) -> &str {
         &self.name
     }

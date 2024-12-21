@@ -1,8 +1,10 @@
 use crate::objects::builders::ObjectBuilder;
 
-pub trait Object<T: ObjectBuilder<Self> + Default>: Sized {
-    fn builder() -> T {
-        T::default()
+pub trait Object {
+    type Builder: ObjectBuilder<Object = Self>;
+
+    fn builder() -> Self::Builder {
+        Self::Builder::default()
     }
     fn name(&self) -> &str;
     fn id(&self) -> u32;

@@ -39,7 +39,7 @@ pub(super) fn extract_name(menu_element: ElementRef, name_selector: &Selector) -
         )
 }
 
-pub(super) fn scrape_from_url<U: IntoUrl + Copy + Debug, T: Object<B>, B: ObjectBuilder<T>>(
+pub(super) fn scrape_from_url<U: IntoUrl + Copy + Debug, T: Object>(
     client: &TeePeeClient,
     url: U,
     selectors: [&str; 3],

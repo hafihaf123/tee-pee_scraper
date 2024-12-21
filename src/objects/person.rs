@@ -69,7 +69,9 @@ impl Person {
     // }
 }
 
-impl Object<PersonBuilder> for Person {
+impl Object for Person {
+    type Builder = PersonBuilder;
+
     fn name(&self) -> &str {
         &self.name
     }

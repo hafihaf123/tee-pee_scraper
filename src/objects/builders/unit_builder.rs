@@ -35,7 +35,9 @@ impl UnitBuilder {
     }
 }
 
-impl ObjectBuilder<Unit> for UnitBuilder {
+impl ObjectBuilder for UnitBuilder {
+    type Object = Unit;
+
     fn name(&mut self, name: &str) -> &mut Self {
         self.name = Some(name.into());
         self
