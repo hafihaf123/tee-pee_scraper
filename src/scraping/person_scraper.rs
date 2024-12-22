@@ -1,24 +1,25 @@
 use crate::objects::builders::ObjectBuilder;
 use crate::objects::{Person, Unit};
-use crate::scraping::scraper_mode::ScraperMode;
+use crate::scraping::scraper_mode::ScraperMode as ScraperModeTrait;
 use crate::scraping::utils::{extract_id, extract_name, fetch_html};
 use crate::{create_selector, Object, Scraper, TeePeeClient};
 use anyhow::Result;
 use indicatif::ProgressBar;
 use std::time::Duration;
-use PersonScraperMode::FromUnit;
+use ScraperMode::FromUnit;
 
-pub enum PersonScraperMode {
+pub enum ScraperMode {
     FromUnit(Unit),
 }
 
-impl ScraperMode<Person> for PersonScraperMode {}
+impl ScraperModeTrait<Person> for ScraperMode {}
 
 pub struct PersonScraper {
     client: TeePeeClient,
 }
 
 impl PersonScraper {
+    #[must_use]
     pub fn new(client: &TeePeeClient) -> Self {
         Self {
             client: client.clone(),
@@ -26,14 +27,14 @@ impl PersonScraper {
     }
 }
 
-impl Scraper<Person, PersonScraperMode> for PersonScraper {
-    fn scrape(&mut self, mode: PersonScraperMode) -> Result<Vec<Person>> {
+impl Scraper<Person, ScraperMode> for PersonScraper {
+    fn scrape(&mut self, mode: ScraperMode) -> Result<Vec<Person>> {
         let bar = ProgressBar::new_spinner();
         bar.set_message("Scraping...");
         bar.enable_steady_tick(Duration::from_millis(100));
 
         let result = match mode {
-            FromUnit(unit) => self.scrape_from_unit(unit),
+            FromUnit(unit) => self.scrape_from_unit(&unit),
         };
 
         bar.finish_and_clear();
@@ -42,7 +43,7 @@ impl Scraper<Person, PersonScraperMode> for PersonScraper {
 }
 
 impl PersonScraper {
-    fn scrape_from_unit(&self, unit: Unit) -> Result<Vec<Person>> {
+    fn scrape_from_unit(&self, unit: &Unit) -> Result<Vec<Person>> {
         let unit_persons_url = format!(
             "https://skauting.tee-pee.com/units/{}/detail#persons",
             unit.id()
