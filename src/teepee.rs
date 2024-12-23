@@ -175,7 +175,13 @@ impl TeePeeClient {
             .with_context(|| format!("Failed to parse response text from '{url:?}'"))
     }
 
-    fn get_view_state<U: IntoUrl + Copy + Debug>(&self, url: U) -> Result<String> {
+    /// Extracts the value of "javax.faces.ViewState" (for sending forms)
+    ///
+    /// # Errors
+    ///
+    /// - sending a GET request to the url fails
+    /// - the "javax.faces.ViewState" element could not be found
+    pub fn get_view_state<U: IntoUrl + Copy + Debug>(&self, url: U) -> Result<String> {
         let page_text = self.get(url)?;
 
         extract_view_state(&page_text)
