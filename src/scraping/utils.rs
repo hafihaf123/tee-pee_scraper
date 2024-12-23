@@ -46,7 +46,7 @@ pub(super) fn extract_id(menu_element: ElementRef, id_selector: &Selector) -> Re
     menu_element
         .select(id_selector)
         .next()
-        .and_then(|id_element| id_element.value().attr("href"))
+        .and_then(|id_element| id_element.attr("href"))
         .and_then(|unit_link| re.captures(unit_link))
         .and_then(|unit_id_capture| unit_id_capture.get(1))
         .map_or_else(
@@ -94,13 +94,15 @@ pub(super) fn extract_name(menu_element: ElementRef, name_selector: &Selector) -
 /// # Returns
 ///
 /// A `Result` indicating success or failure of the scraping operation.
-pub(super) fn scrape_from_url<U: IntoUrl + Copy + Debug, T: Object>(
+pub(super) fn scrape_object_basics<U: IntoUrl + Copy + Debug, T: Object>(
     client: &TeePeeClient,
     url: U,
     selectors: [&str; 3],
     container: &mut Vec<T>,
 ) -> Result<()> {
-    let html = fetch_html(client, url)?;
+    let tab_view_id = get_tab_view_id(client, url)?;
+    let form_response = show_all(client, url, &tab_view_id)?;
+    let html = Html::parse_document(&form_response);
 
     let outer_selector = create_selector(selectors[0])?;
     let name_selector = create_selector(selectors[1])?;
@@ -116,4 +118,73 @@ pub(super) fn scrape_from_url<U: IntoUrl + Copy + Debug, T: Object>(
     }
 
     Ok(())
+}
+
+fn show_all<U: IntoUrl + Copy + Debug>(
+    client: &TeePeeClient,
+    url: U,
+    tab_view_id: &str,
+) -> Result<String> {
+    let java_view_state = client.get_view_state(url)?;
+    let form = [
+        ("javax.faces.partial.ajax", "true"),
+        (
+            "javax.faces.source",
+            &["orgUnitDetailsTabViewId:", tab_view_id].concat(),
+        ),
+        (
+            "javax.faces.partial.execute",
+            &["orgUnitDetailsTabViewId:", tab_view_id].concat(),
+        ),
+        (
+            "javax.faces.partial.render",
+            &["orgUnitDetailsTabViewId:", tab_view_id].concat(),
+        ), //*******************//
+        // (
+        //     &["orgUnitDetailsTabViewId:", tab_view_id].concat(),
+        //     &["orgUnitDetailsTabViewId:", tab_view_id].concat(),
+        // ),
+        (
+            &["orgUnitDetailsTabViewId:", tab_view_id, "_pagination"].concat(),
+            "true",
+        ),
+        (
+            &["orgUnitDetailsTabViewId:", tab_view_id, "_first"].concat(),
+            "0",
+        ),
+        (
+            &["orgUnitDetailsTabViewId:", tab_view_id, "_rows"].concat(),
+            "1000",
+        ),
+        // (
+        //     "orgUnitDetailsTabViewId:subUnitForm",
+        //     "orgUnitDetailsTabViewId:subUnitForm",
+        // ),
+        // ("orgUnitDetailsTabViewId:searchValueId", ""),
+        (
+            &["orgUnitDetailsTabViewId:", tab_view_id, "_rppDD"].concat(),
+            "1000",
+        ),
+        ("javax.faces.ViewState", &java_view_state),
+    ];
+    let response = client.post_form(url, &form)?;
+
+    Ok(response)
+}
+
+fn get_tab_view_id<U: IntoUrl + Copy + Debug>(client: &TeePeeClient, url: U) -> Result<String> {
+    let html = fetch_html(client, url)?;
+    let selector = create_selector(
+        "select.ui-paginator-rpp-options.ui-widget.ui-state-default.ui-corner-left",
+    )?;
+    let re = Regex::new("orgUnitDetailsTabViewId:(\\w*)_rppDD")?;
+    html.select(&selector)
+        .next()
+        .and_then(|element| element.attr("name"))
+        .and_then(|value| re.captures(value))
+        .and_then(|capture| capture.get(1))
+        .map_or_else(
+            || Err(anyhow!("Failed to get tab view")),
+            |tab_view_id| Ok(tab_view_id.as_str().into()),
+        )
 }

@@ -1,7 +1,9 @@
+use crate::objects::builders::ObjectBuilder;
 use crate::objects::Unit;
 use crate::scraping::scraper_mode::ScraperMode as ScraperModeTrait;
-use crate::scraping::utils::scrape_from_url;
+use crate::scraping::utils::{extract_id, extract_name, fetch_html, scrape_object_basics};
 use crate::scraping::{ChildUnits, MyUnits};
+use crate::utils::create_selector;
 use crate::{Object, Scraper, TeePeeClient};
 use anyhow::Result;
 use indicatif::ProgressBar;
@@ -53,7 +55,7 @@ impl Scraper<Unit, ScraperMode> for UnitScraper {
             ChildUnits(mut parent_unit) => {
                 self.scrape_child_units(&mut parent_unit)?;
                 Ok(parent_unit.into_child_units())
-            } // AllData(unit) => {}
+            }
         };
 
         bar.finish_and_clear();
@@ -71,12 +73,22 @@ impl UnitScraper {
     fn scrape_my_units(&mut self) -> Result<Vec<Unit>> {
         let mut my_units: Vec<Unit> = Vec::new();
 
-        scrape_from_url(
+        let html = fetch_html(
             &self.client,
             "https://skauting.tee-pee.com/user/profile#data",
-            ["li#j_idt51\\:layoutMenu_5 ul li", "a", "a"],
-            &mut my_units,
         )?;
+
+        let outer_selector = create_selector("li#j_idt51\\:layoutMenu_5 ul li")?;
+        let inner_selector = create_selector("a")?;
+
+        for unit_element in html.select(&outer_selector) {
+            let mut builder = Unit::builder();
+
+            builder.id(extract_id(unit_element, &inner_selector)?);
+            builder.name(&extract_name(unit_element, &inner_selector)?);
+
+            my_units.push(builder.build()?);
+        }
 
         Ok(my_units)
     }
@@ -92,17 +104,13 @@ impl UnitScraper {
     ///
     /// A `Result` indicating success or failure of the scraping operation.
     fn scrape_child_units(&self, parent_unit: &mut Unit) -> Result<()> {
-        scrape_from_url(
+        scrape_object_basics(
             &self.client,
             &format!(
                 "https://skauting.tee-pee.com/units/{}/detail#units",
                 parent_unit.id()
             ),
-            [
-                "div#orgUnitDetailsTabViewId\\:j_idt103_content div.ui-g",
-                "span.ListItemName",
-                "a.ui-link.ui-widget",
-            ],
+            ["table.Wid100", "span.ListItemName", "a.ui-link.ui-widget"],
             parent_unit.child_units_mut(),
         )?;
 
@@ -125,7 +133,6 @@ impl Unit {
     ///
     /// - If the scraping operation fails.
     pub fn scrape_child_units(&mut self, scraper: &mut UnitScraper) -> Result<()> {
-        scraper.scrape_child_units(self)?;
-        Ok(())
+        scraper.scrape_child_units(self)
     }
 }
