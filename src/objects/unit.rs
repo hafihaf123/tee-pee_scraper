@@ -1,5 +1,5 @@
 use crate::objects::builders::UnitBuilder;
-use crate::objects::Object;
+use crate::objects::{Object, Person};
 use std::fmt::{Display, Formatter};
 
 /// Represents the type of a unit in an organizational hierarchy.
@@ -27,6 +27,8 @@ pub struct Unit {
     parent_unit: Option<Box<Unit>>,
     /// The child units of this unit.
     child_units: Vec<Unit>,
+    /// The people belonging to this unit
+    persons: Vec<Person>,
     /// An optional supplementary name for the unit.
     supplementary_name: Option<String>,
     /// The type of the unit, if specified.
@@ -65,6 +67,7 @@ impl Unit {
             supplementary_name,
             unit_type,
             number,
+            persons: Vec::new(),
         }
     }
 
@@ -116,6 +119,25 @@ impl Unit {
     /// - `unit`: The child unit to add.
     pub fn add_child_unit(&mut self, unit: Unit) {
         self.child_units.push(unit);
+    }
+
+    #[must_use]
+    pub fn persons(&self) -> &Vec<Person> {
+        &self.persons
+    }
+
+    #[must_use]
+    pub fn persons_mut(&mut self) -> &mut Vec<Person> {
+        &mut self.persons
+    }
+
+    #[must_use]
+    pub fn into_persons(self) -> Vec<Person> {
+        self.persons
+    }
+
+    pub fn add_person(&mut self, person: Person) {
+        self.persons.push(person);
     }
 }
 

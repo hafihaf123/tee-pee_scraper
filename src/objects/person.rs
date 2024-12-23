@@ -1,12 +1,13 @@
 use crate::objects::builders::PersonBuilder;
 use crate::objects::Object;
 
+#[derive(Debug, Clone)]
 pub enum Gender {
     Male,
     Female,
 }
 
-#[derive(Default)]
+#[derive(Default, Debug, Clone)]
 /// Represents a person with various attributes.
 pub struct Person {
     /// The name of the person.
