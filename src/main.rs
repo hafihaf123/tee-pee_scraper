@@ -4,7 +4,7 @@ use inquire::{Password, Text};
 use std::sync::Arc;
 use std::time::Duration;
 use tee_pee_scraper::authentication::PasswordValidator;
-use tee_pee_scraper::scraping::{FromUnit, MyUnits, PersonScraper, UnitScraper};
+use tee_pee_scraper::scraping::{MyUnits, PersonScraper, UnitScraper};
 use tee_pee_scraper::{Credentials, Object, Scraper, TeePeeClient};
 
 fn main() -> Result<()> {
@@ -41,15 +41,15 @@ fn main() -> Result<()> {
 
         unit.scrape_child_units(&mut unit_scraper)?;
         unit.into_child_units().iter_mut().for_each(|child| {
-            if child.name().eq("Húsenice") {
-                println!("\n{} unit persons:\n", child.name());
+            println!("   {}", child.name());
+            if child.name().eq("Rysi") {
                 let mut person_scraper = PersonScraper::new(&tee_pee_client);
-                let persons = person_scraper
-                    .scrape(FromUnit(child.clone()))
-                    .expect("Failed to scrape persons");
-                for person in persons {
-                    println!("{}", person.name());
-                }
+                child
+                    .scrape_persons(&mut person_scraper)
+                    .expect("Failed scraping persons");
+                child.persons().iter().for_each(|person| {
+                    println!("      {}", person.name());
+                });
                 println!();
             }
         });
